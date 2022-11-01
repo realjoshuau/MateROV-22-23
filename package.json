@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "react-webcam": "^7.0.1",
+    "react-winbox": "^1.4.2"
+  }
+}
