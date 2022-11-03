@@ -1,77 +1,141 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import WinBox from 'react-winbox'
 
 import reportWebVitals from './reportWebVitals';
-import Webcam from "react-webcam";
 
-
-function WindowManager(){
-  const [windows, setWindows] = useState([
-    {
-      id: 1,
-      neededProps: {
-        title: 'Window 1',
-      },
-      child: <Webcam />
-    },
-    {
-      id: 2,
-      neededProps: {
-        title: 'Window 2',
-      },
-      child: <Webcam />
-    },
-    {
-      id: 3,
-      neededProps: {
-        title: 'Window 3',
-      },
-      child: <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" />
-    },
-    {
-      id: 4,
-      neededProps: {
-        title: 'Window 4',
-      },
-      child: <iframe src="https://cdpn.io/vainsan/fullpage/QWKwPwv" />
-    }
-  ]);
-
-  // This function is for manage `onclose` callback behavior and virtual DOM state.
-  const handleClose = (force, id) => {
-    let state = [...windows];
-    const index = state.findIndex(info => info.id === id);
-    if (index !== -1) {
-      if (state[index].onclose && state[index].onclose(force))
-        return true;                       // window-specific onclose, returns true if it does not need the default close process.
-      state.splice(index, 1);
-      setTimeout(() => setWindows(state)); // (Notice 5)to change winbox showing state in `onclose`, MUST wrap it within `setTimeout`
-    }
-  };
-
-  return (
-    <>
-      {windows.map(info => (
-        <WinBox 
-          key={info.id} 
-          id={info.id} 
-          onclose={(force) => handleClose(force, info.id)}
-          {...info.neededProps} // assign any props you want to WinBox
-        >
-          {info.child}
-        </WinBox>
-      ))}
-    </>
-  );
-}
+import WindowManager from './utils/WindowManager';
+import Webcam from 'react-webcam';
+import msgpack from 'msgpack-lite';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-    <div>
-        <WindowManager />
-    </div>
-);
+
+
+function App(){
+  const [pilotOrCopilot, setPilotOrCopilot] = useState(null);
+  const [state, setState] = useState({
+    webcams: [],
+    missionTask: null,
+    serialMonitor: null
+  });
+
+  const [windows, setWindows] = useState({})
+
+
+  function setPoC(_){
+    console.log("Setting pilot or copilot to " + _);
+    // Register listeners:
+    window._ws.state.listeners.push(function(e){
+      console.log("Received message from server: ");
+      console.log(e);
+      e = msgpack.decode(e.data);
+      console.log("Received decoded-message from server: " + e);
+    });
+
+    window._ws.state.listeners.push(handleWSMsg);
+
+    if (_ === "pilot"){
+      setPilotOrCopilot(_);
+      // Send a message down the websocket to the server
+      var msg = msgpack.encode({
+        cmd: "sub",
+        role: "pilot"
+      });
+      console.log("Sending message to server: " + msg)
+      window._ws.ws.send(msg);
+    } else {
+      alert("copilot not implemented yet");
+      setPilotOrCopilot(_);
+      // Send a message down the websocket to the server
+      var msg = msgpack.encode({
+        cmd: "sub",
+        role: "copilot"
+      });
+      console.log("Sending message to server: " + msg)
+      window._ws.ws.send(msg)
+    }
+  }
+
+  function handleWSMsg(msg){
+    // Handle messages from the server
+    msg = msgpack.decode(msg.data);
+    console.log("Received message from server: " + msg);
+
+    if (msg.cmd != "msg"){
+      console.log("Received message from server that was not a message");
+      return;
+    }
+      /*
+      {
+        "cmd": "msg",
+        "role": "pilot", // You only receive messages from your role (pilot/copilot)
+        "msg": {
+          "type": "missionTask", // Can be "missionTask", "serialMonitor", "webcam"
+          "data": {
+            // Data depends on the type
+          }
+        }
+      }
+      */
+    if (msg.msg.type === "missionTask"){
+      setState({
+        ...state,
+        missionTask: msg.msg.data
+      });
+      console.log("New mission task: " + msg.msg.data);
+    }
+    if (msg.msg.type === "serialMonitor"){
+      setState({
+        ...state,
+        serialMonitor: msg.msg.data
+      });
+      console.log("New serial monitor data: " + msg.msg.data);
+    }
+    if (msg.msg.type === "webcam"){
+      // No.
+      console.log("Received webcam message from server");
+    }
+  }
+
+  window._debug = {
+    setPoC: setPoC,
+    sendToWS: function(msg){
+      window._ws.ws.send(msgpack.encode(msg));
+    }
+  };
+  if (pilotOrCopilot === null){
+    return (
+      <div>
+        <h1>Are you the pilot or copilot?</h1>
+        <button onClick={() => setPoC("pilot")}>Pilot</button>
+        <button onClick={() => setPoC("copilot")}>Copilot</button>
+      </div>
+    )
+  } else {
+    return (
+        <div>
+          <WindowManager windows={[
+            {
+              id: "1",
+              neededProps: {
+                title: "Webcam",
+                x: "center",
+                y: "center",
+                width: "400px",
+                height: "400px",
+              },
+              child: <Webcam />,
+            }
+          ]}/>
+      </div>
+    )
+  }
+}
+
+function rootRenderTimer(){
+  root.render(<App />)
+  console.log("Finished rendering at " + new Date().toLocaleTimeString() + ", approximately " + (Date.now() - window._ws.state.start) + "ms since start");
+}
+  rootRenderTimer();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

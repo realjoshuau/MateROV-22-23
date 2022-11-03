@@ -37,6 +37,31 @@
       }
     </style>
     <title>React App</title>
+    <script>
+      !function(){
+        if (null != window.WebSocket){
+          var o = new WebSocket("ws://localhost:8765"); // todo: if not 5287, then scan for open port from 5287-5297
+          //var o = new WebSocket("wss://ws.postman-echo.com/raw");
+          //o.binaryType = "arraybuffer";
+          var t = Date.now(),i = {open: !1, messages: [], start: t, listeners: []};
+          o.onopen = function(){
+            console.log("WebSocket connection established to host in " + (Date.now() - t) + "ms");
+            i.open = !0;
+          }, o.onclose = o.onerror = function(){
+            window._ws = null;
+          }, o.onmessage = function(n){
+            i.messages.push(n);
+            for (var e = 0; e < i.listeners.length; e++){
+              i.listeners[e](n);
+            }
+          }, window._ws = {
+            ws: o,
+            state: i
+          }
+        }
+      }() 
+      // anonymous function to allow websocket to init before the rest of the script runs
+      </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -52,14 +77,5 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
   </body>
-  <script>
-    window._ws = {
-      state: {
-        connected: false,
-      },
-      obj: null,
-    }
-    const __ws = new WebSocket('ws://localhost:8080');
-    
-    </script>
+
 </html>
