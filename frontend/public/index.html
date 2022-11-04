@@ -48,7 +48,10 @@
             console.log("WebSocket connection established to host in " + (Date.now() - t) + "ms");
             i.open = !0;
           }, o.onclose = o.onerror = function(){
-            window._ws = null;
+            window._ws = {
+              ws: null,
+              state: i
+            };
           }, o.onmessage = function(n){
             i.messages.push(n);
             for (var e = 0; e < i.listeners.length; e++){

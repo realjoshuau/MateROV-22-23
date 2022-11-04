@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 import json, msgpack
+import base64
 
 import logging
 logging.basicConfig(
@@ -10,19 +11,30 @@ logging.basicConfig(
 pilotSockets = []
 coPilotSockets = []
 
+# This websocket is super flaky. It's not clear why -- but if you get issues with it, restart it.
+# This websocket is also not intended to be used in production. It's just a proof of concept.
+
+
 async def processMsg(websocket, path):
+    if websocket not in pilotSockets and websocket not in coPilotSockets:
+        print("New socket: " + str(websocket))
+        # # If socket doesn't ask to subscribe within 5 seconds, close it.
+        # try:
+        #     await asyncio.wait_for(websocket.recv(), timeout=5)
+        # except asyncio.TimeoutError:
+        #     print("Socket " + str(websocket) + " did not subscribe within 5 seconds; closing.")
+        #     await websocket.close()
+        #     return
     async for message in websocket:
         try:
             # See if message is bytes-like or string-like.
             if isinstance(message, bytes):
+                print("Websocket sent legacy msgpack message; ignoring.")
                 data = msgpack.unpackb(message, raw=False)
-            else:
-                print("Websocket did not send bytes-like object.")
-                data = json.loads(message)
-                await websocket.send(json.dumps({
-                    "error": "Please encode messages as msgpack."
-                }));
                 continue
+            else:
+                # Decode the JSON message wrapped in a base64 string.
+                data = json.loads(message)
             print("New message from " + str(websocket) + ": " + str(data))
             if data["cmd"] == "sub":
                 if data["role"] == "pilot":
@@ -41,13 +53,13 @@ async def processMsg(websocket, path):
             elif data["cmd"] == "msg":    
                 for socket in pilotSockets:
                     print("Sent message to pilot socket: " + str(socket))
-                    # Repack the message as msgpack.
-                    msg = msgpack.packb(data, use_bin_type=True)
+                    # Repack the message as JSON.
+                    msg = json.dumps(data)
                     await socket.send(msg)
                 for socket in coPilotSockets:
                     print("Sent message to co-pilot socket: " + str(socket))
-                    # Repack the message as msgpack.
-                    msg = msgpack.packb(data, use_bin_type=True)
+                    # Repack the message as base64 JSON
+                    msg = json.dumps(data)
                     await socket.send(msg)
                     #await socket.send(message)
 
@@ -74,6 +86,7 @@ async def printNumSockets():
         print("Pilot sockets: " + str(len(pilotSockets)))
         print("Co-pilot sockets: " + str(len(coPilotSockets)))
         await asyncio.sleep(5)
+
 
 async def main():
     async with websockets.serve(processMsg, "localhost", 8765):

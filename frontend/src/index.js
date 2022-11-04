@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import msgpack from 'msgpack-lite';
 
 import reportWebVitals from './reportWebVitals';
 
 import WindowManager from './utils/WindowManager';
 import Webcam from 'react-webcam';
-import msgpack from 'msgpack-lite';
+import {
+  decoder,
+  encoder,
+} from './utils/serializer';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -19,6 +23,7 @@ function App(){
   });
 
   const [windows, setWindows] = useState({})
+  const [editorState, setEditorState] = useState("");
 
 
   function setPoC(_){
@@ -27,8 +32,8 @@ function App(){
     window._ws.state.listeners.push(function(e){
       console.log("Received message from server: ");
       console.log(e);
-      e = msgpack.decode(e.data);
-      console.log("Received decoded-message from server: " + e);
+      var data = decoder(e.data);
+      console.log(data);
     });
 
     window._ws.state.listeners.push(handleWSMsg);
@@ -36,7 +41,7 @@ function App(){
     if (_ === "pilot"){
       setPilotOrCopilot(_);
       // Send a message down the websocket to the server
-      var msg = msgpack.encode({
+      var msg = encoder({
         cmd: "sub",
         role: "pilot"
       });
@@ -46,7 +51,7 @@ function App(){
       alert("copilot not implemented yet");
       setPilotOrCopilot(_);
       // Send a message down the websocket to the server
-      var msg = msgpack.encode({
+      var msg = encoder({
         cmd: "sub",
         role: "copilot"
       });
@@ -55,9 +60,27 @@ function App(){
     }
   }
 
+  function onEditorStateChange(editorState){
+    if (pilotOrCopilot === "pilot"){ // Only the co-pilot can edit the mission task
+      return;
+    }
+    setEditorState(editorState);
+    var msg = encoder({
+      cmd: "msg",
+      role: "pilot",
+      msg: {
+        type: "missionTask",
+        data: editorState
+      }
+    });
+    console.log("Sending message to server: " + msg)
+    window._ws.ws.send(msg);
+  }
+
   function handleWSMsg(msg){
     // Handle messages from the server
-    msg = msgpack.decode(msg.data);
+    //var rawMsg = new Uint8Array(msg.data);
+    var msg = decoder(msg.data);
     console.log("Received message from server: " + msg);
 
     if (msg.cmd != "msg"){
@@ -82,6 +105,8 @@ function App(){
         missionTask: msg.msg.data
       });
       console.log("New mission task: " + msg.msg.data);
+      // Update the editor state
+      setEditorState(msg.msg.data);
     }
     if (msg.msg.type === "serialMonitor"){
       setState({
@@ -99,7 +124,7 @@ function App(){
   window._debug = {
     setPoC: setPoC,
     sendToWS: function(msg){
-      window._ws.ws.send(msgpack.encode(msg));
+      window._ws.ws.send(encoder(msg));
     }
   };
   if (pilotOrCopilot === null){
@@ -123,7 +148,9 @@ function App(){
                 width: "400px",
                 height: "400px",
               },
-              child: <Webcam />,
+              child: <textarea value={editorState} readOnly={pilotOrCopilot === "pilot"} style={{width: "100%", height: "100%"}} onChange={(e) => {
+                onEditorStateChange(e.target.value);
+              }}/>
             }
           ]}/>
       </div>
