@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import msgpack from 'msgpack-lite';
+import MDEditor from "@uiw/react-md-editor";
+
 
 import reportWebVitals from './reportWebVitals';
 
@@ -138,7 +140,7 @@ function App(){
   } else {
     return (
         <div>
-          <WindowManager windows={[
+          {/* <WindowManager windows={[
             {
               id: "1",
               neededProps: {
@@ -152,7 +154,21 @@ function App(){
                 onEditorStateChange(e.target.value);
               }}/>
             }
-          ]}/>
+          ]}/> */}
+          <WindowManager windows={[
+            {
+              id: "1",
+              neededProps: {
+                title: "Mission Task",
+                x: "center",
+                y: "center",
+                width: "400px",
+                height: "400px",
+              },
+              child: <MDEditor value={editorState} readOnly={pilotOrCopilot === "pilot"} onChange={(e) => {
+                onEditorStateChange(e);
+              }}/>
+            }]} />
       </div>
     )
   }
