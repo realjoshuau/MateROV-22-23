@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import msgpack from 'msgpack-lite';
 import MDEditor from "@uiw/react-md-editor";
-
+import MissionTask from './views/MissionTask';
 
 import reportWebVitals from './reportWebVitals';
 
@@ -25,7 +25,7 @@ function App(){
   });
 
   const [windows, setWindows] = useState({})
-  const [editorState, setEditorState] = useState("");
+  const [editorState, setEditorState] = useState([]);
 
 
   function setPoC(_){
@@ -62,10 +62,7 @@ function App(){
     }
   }
 
-  function onEditorStateChange(editorState){
-    if (pilotOrCopilot === "pilot"){ // Only the co-pilot can edit the mission task
-      return;
-    }
+  function missionTaskStateChange(editorState){
     setEditorState(editorState);
     var msg = encoder({
       cmd: "msg",
@@ -165,9 +162,7 @@ function App(){
                 width: "400px",
                 height: "400px",
               },
-              child: <MDEditor value={editorState} readOnly={pilotOrCopilot === "pilot"} onChange={(e) => {
-                onEditorStateChange(e);
-              }}/>
+              child: <MissionTask pilotOrCopilot={pilotOrCopilot} missionTasks={editorState} setMissionTasks={missionTaskStateChange} />
             }]} />
       </div>
     )

@@ -27,14 +27,7 @@ async def processMsg(websocket, path):
         #     return
     async for message in websocket:
         try:
-            # See if message is bytes-like or string-like.
-            if isinstance(message, bytes):
-                print("Websocket sent legacy msgpack message; ignoring.")
-                data = msgpack.unpackb(message, raw=False)
-                continue
-            else:
-                # Decode the JSON message wrapped in a base64 string.
-                data = json.loads(message)
+            data = json.loads(message)
             print("New message from " + str(websocket) + ": " + str(data))
             if data["cmd"] == "sub":
                 if data["role"] == "pilot":
@@ -62,6 +55,10 @@ async def processMsg(websocket, path):
                     msg = json.dumps(data)
                     await socket.send(msg)
                     #await socket.send(message)
+            elif data["cmd"] == "webrtc":
+                print("do this shiz later")
+                
+
 
         except Exception as e:
             print("Error: " + str(e))
