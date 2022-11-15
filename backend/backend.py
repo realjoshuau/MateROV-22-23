@@ -27,14 +27,6 @@ db = Database(checklist)
 
 async def processMsg(websocket, path):
     if websocket not in pilotSockets and websocket not in coPilotSockets:
-        print("New socket: " + str(websocket))
-        # # If socket doesn't ask to subscribe within 5 seconds, close it.
-        # try:
-        #     await asyncio.wait_for(websocket.recv(), timeout=5)
-        # except asyncio.TimeoutError:
-        #     print("Socket " + str(websocket) + " did not subscribe within 5 seconds; closing.")
-        #     await websocket.close()
-        #     return
     async for message in websocket:
         try:
             # See if message is bytes-like or string-like.
@@ -69,19 +61,19 @@ async def processMsg(websocket, path):
         except Exception as e:
             print("Error: " + str(e))
             print("Websocket sent something we didn't understand: " + str(message))
-            # Remove the socket from the list.
-            if websocket in pilotSockets:
-                pilotSockets.remove(websocket)
-            if websocket in coPilotSockets:
-                coPilotSockets.remove(websocket)
+            # # Remove the socket from the list.
+            # if websocket in pilotSockets:
+            #     pilotSockets.remove(websocket)
+            # if websocket in coPilotSockets:
+            #     coPilotSockets.remove(websocket)
             
-            # Close the socket.
-            try:
-                await websocket.close()
-            except:
-                pass
-            finally:
-                break # We no longer need to process messages from this socket. 
+            # # Close the socket.
+            # try:
+            #     await websocket.close()
+            # except:
+            #     pass
+            # finally:
+            #     break # We no longer need to process messages from this socket. 
 
 # Start a routine to print the number of sockets connected.
 async def printNumSockets():

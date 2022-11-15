@@ -163,7 +163,19 @@ function App(){
                 height: "400px",
               },
               child: <MissionTask pilotOrCopilot={pilotOrCopilot} missionTasks={editorState} setMissionTasks={missionTaskStateChange} />
-            }]} />
+            }, 
+            {
+              id: "2",
+              neededProps: {
+                title: "Serial Monitor",
+                x: "center",
+                y: "center",
+                width: "400px",
+                height: "400px",
+              },
+              child: <Webcam />
+            }
+            ]} />
       </div>
     )
   }
