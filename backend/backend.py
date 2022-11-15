@@ -2,8 +2,9 @@ import asyncio
 import websockets
 import json, msgpack
 import base64
-from pilot import Pilot
+
 from message import JSONMessage
+from database import Database
 
 import logging
 logging.basicConfig(
@@ -12,6 +13,13 @@ logging.basicConfig(
 )
 pilotSockets = []
 coPilotSockets = []
+checklist = {
+    "a": "done",
+    "b": "done",
+    "c": "undone"
+}
+
+db = Database(checklist)
 
 # This websocket is super flaky. It's not clear why -- but if you get issues with it, restart it.
 # This websocket is also not intended to be used in production. It's just a proof of concept.
@@ -54,6 +62,9 @@ async def processMsg(websocket, path):
                     for socket in coPilotSockets:
                         await socket.send(message)
                         print("Sent message to co-pilot socket: " + str(socket))
+            elif msg.command == "completedTask":
+                db.deleteTask()
+                        
 
         except Exception as e:
             print("Error: " + str(e))

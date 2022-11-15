@@ -8,4 +8,3 @@ class JSONMessage:
             data = json.loads(message)
         self.command = data["cmd"]
         self.role = data["role"]
-        self.checklist = data["checklist"]
