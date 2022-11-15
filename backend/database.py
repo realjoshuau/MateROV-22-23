@@ -9,3 +9,6 @@ class Database:
                 break
         print(self.checklist)
         return
+    
+    def getTasks(self):
+        return self.checklist
