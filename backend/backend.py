@@ -60,7 +60,6 @@ async def processMsg(websocket, path):
         try:
             # See if message is bytes-like or string-like.
             msg = JSONMessage(message)
-<<<<<<< Updated upstream
             if msg.command == "sub":
                 if msg.role == "pilot":
                     pilotSockets.append(websocket)
@@ -92,8 +91,6 @@ async def processMsg(websocket, path):
                 for socket in pilotSockets:
                     await socket.send(json.dumps(db.getTasks()))
                     
-=======
->>>>>>> Stashed changes
                         
 
         except Exception as e:
