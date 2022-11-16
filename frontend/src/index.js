@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import msgpack from 'msgpack-lite';
-import MDEditor from "@uiw/react-md-editor";
 import MissionTask from './views/MissionTask';
 
 import reportWebVitals from './reportWebVitals';
@@ -29,37 +27,7 @@ function App(){
 
 
   function setPoC(_){
-    console.log("Setting pilot or copilot to " + _);
-    // Register listeners:
-    window._ws.state.listeners.push(function(e){
-      console.log("Received message from server: ");
-      console.log(e);
-      var data = decoder(e.data);
-      console.log(data);
-    });
-
-    window._ws.state.listeners.push(handleWSMsg);
-
-    if (_ === "pilot"){
-      setPilotOrCopilot(_);
-      // Send a message down the websocket to the server
-      var msg = encoder({
-        cmd: "sub",
-        role: "pilot"
-      });
-      console.log("Sending message to server: " + msg)
-      window._ws.ws.send(msg);
-    } else {
-      alert("copilot not implemented yet");
-      setPilotOrCopilot(_);
-      // Send a message down the websocket to the server
-      var msg = encoder({
-        cmd: "sub",
-        role: "copilot"
-      });
-      console.log("Sending message to server: " + msg)
-      window._ws.ws.send(msg)
-    }
+    
   }
 
   function missionTaskStateChange(editorState){
@@ -137,21 +105,6 @@ function App(){
   } else {
     return (
         <div>
-          {/* <WindowManager windows={[
-            {
-              id: "1",
-              neededProps: {
-                title: "Webcam",
-                x: "center",
-                y: "center",
-                width: "400px",
-                height: "400px",
-              },
-              child: <textarea value={editorState} readOnly={pilotOrCopilot === "pilot"} style={{width: "100%", height: "100%"}} onChange={(e) => {
-                onEditorStateChange(e.target.value);
-              }}/>
-            }
-          ]}/> */}
           <WindowManager windows={[
             {
               id: "1",
@@ -173,7 +126,19 @@ function App(){
                 width: "400px",
                 height: "400px",
               },
-              child: <Webcam />
+              child: <Webcam 
+                audio={false}
+                muted={true}
+                screenshotFormat={"image/png"}
+                forceScreenshotSourceSize={true}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "fill",
+                  textAlign: "center",
+                  position: "absolute",
+                }}
+              />
             }
             ]} />
       </div>

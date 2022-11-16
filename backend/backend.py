@@ -1,6 +1,6 @@
 import asyncio
 import websockets
-import json, msgpack
+import json, msgpac
 import base64
 
 from message import JSONMessage
@@ -11,12 +11,33 @@ logging.basicConfig(
     format="%(message)s",
     level=logging.DEBUG,
 )
-pilotSockets = []
-coPilotSockets = []
-checklist = {
-    "a": "done",
-    "b": "done",
-    "c": "undone"
+STATE: dict = {
+    "serialMonitor": [],
+    "rovOrientation": {
+        "roll": 0,
+        "pitch": 0,
+        "yaw": 0,
+    },
+    "clawSettings": {
+        "claw1": {
+            "state": "",
+            "angle": 0,
+        }
+    },
+    "electrical": [
+        {
+            "name": "Battery 1",
+            "voltage": 0,
+            "current": 0,
+            "time": 0,
+        },
+    ],
+    "missionPlan": [
+        {
+            "name": "Task 1",
+            "checked": False,
+        }
+    ]
 }
 
 db = Database(checklist)
@@ -39,6 +60,7 @@ async def processMsg(websocket, path):
         try:
             # See if message is bytes-like or string-like.
             msg = JSONMessage(message)
+<<<<<<< Updated upstream
             if msg.command == "sub":
                 if msg.role == "pilot":
                     pilotSockets.append(websocket)
@@ -70,6 +92,8 @@ async def processMsg(websocket, path):
                 for socket in pilotSockets:
                     await socket.send(json.dumps(db.getTasks()))
                     
+=======
+>>>>>>> Stashed changes
                         
 
         except Exception as e:
@@ -89,18 +113,23 @@ async def processMsg(websocket, path):
             finally:
                 break # We no longer need to process messages from this socket. 
 
-# Start a routine to print the number of sockets connected.
-async def printNumSockets():
-    while True:
-        print("Pilot sockets: " + str(len(pilotSockets)))
-        print("Co-pilot sockets: " + str(len(coPilotSockets)))
-        await asyncio.sleep(5)
+# 
 
+previousState = STATE
+previousConnected: int = 0
+async def debug_state():
+    global previousState
+    global previousConnected
+    while True:
+        if previousState != STATE:
+            print(STATE)
+            previousState = STATE
+        if previousConnected != len(USERS):
+            print(f"Connected: {len(USERS)}")
+            previousConnected = len(USERS)
+        await asyncio.sleep(0.1)
 
 async def main():
-    async with websockets.serve(processMsg, "localhost", 8765):
-        await printNumSockets()
+    async with websockets.serve(register, "localhost", 8765):
+        await printConnected()
         await asyncio.Future()  # run forever
-
-print("Server running on port 8765")
-asyncio.run(main())
