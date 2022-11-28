@@ -39,7 +39,7 @@ async def register(websocket, path):
     try:
         async for message in websocket:
             data = json.loads(message)
-            if data["cmd"] == "update":
+            if data["cmd"] == "rawStateUpdate":
                 STATE[data["key"]] = data["value"]
                 # Send the new state to all users
                 if USERS:
@@ -49,7 +49,35 @@ async def register(websocket, path):
                     }))
             elif data["cmd"] == "get":
                 await websocket.send(json.dumps(STATE[data["key"]]))
-            elif data["cmd"] == "add"
+            elif data["cmd"] == "missionTask":
+                if data["action"] == "add":
+                    STATE["missionPlan"].append({
+                        "name": data["name"],
+                        "checked": False,
+                    })
+                elif data["action"] == "remove":
+                    STATE["missionPlan"].pop(data["index"])
+                elif data["action"] == "check":
+                    STATE["missionPlan"][data["index"]]["checked"] = data["checked"]
+                # Send the new state to all users
+                if USERS:
+                    await websockets.broadcast(USERS, json.dumps({
+                        "cmd": "update",
+                        "state": STATE,
+                    }))
+            elif data["cmd"] == "electrical": # Electrical shows a graph of data over time & current state
+                if data["action"] == "add":
+                    STATE["electrical"].append({
+                        "name": data["name"],
+                        "voltage": data["voltage"],
+                        "current": data["current"],
+                        "time": data["time"],
+                    })
+                elif data["action"] == "get":
+                    await websocket.send(json.dumps(STATE["electrical"]))
+                elif data["action"] == "listAllByTime":
+                    # TODO: make sure time is sequential. probably just unixtime
+                    await websocket.send(json.dumps(STATE["electrical"]))
             else:
                 print("Unknown command: " + str(data["command"]))
     except Exception as e:
