@@ -1,5 +1,8 @@
 import asyncio, json, websockets
 
+LISTEN_PORT = 8765
+LISTEN_HOST = "localhost"
+
 STATE: dict = {
     "serialMonitor": [],
     "rovOrientation": {
@@ -31,6 +34,12 @@ STATE: dict = {
 
 USERS: set = set()
 
+def rebroadcastState():
+    if USERS:
+        websockets.broadcast(USERS, json.dumps({
+            "cmd": "update",
+            "state": STATE,
+        }))
 
 async def register(websocket, path):
     USERS.add(websocket)
@@ -43,7 +52,7 @@ async def register(websocket, path):
                 STATE[data["key"]] = data["value"]
                 # Send the new state to all users
                 if USERS:
-                    await websockets.broadcast(USERS, json.dumps({
+                    websockets.broadcast(USERS, json.dumps({
                         "cmd": "update",
                         "state": STATE,
                     }))
@@ -60,11 +69,7 @@ async def register(websocket, path):
                 elif data["action"] == "check":
                     STATE["missionPlan"][data["index"]]["checked"] = data["checked"]
                 # Send the new state to all users
-                if USERS:
-                    await websockets.broadcast(USERS, json.dumps({
-                        "cmd": "update",
-                        "state": STATE,
-                    }))
+                rebroadcastState()
             elif data["cmd"] == "electrical": # Electrical shows a graph of data over time & current state
                 if data["action"] == "add":
                     STATE["electrical"].append({
@@ -78,7 +83,19 @@ async def register(websocket, path):
                 elif data["action"] == "listAllByTime":
                     # TODO: make sure time is sequential. probably just unixtime
                     await websocket.send(json.dumps(STATE["electrical"]))
+                
+                rebroadcastState()
+            elif data["cmd"] == "rovOrientation":
+                if data["action"] == "update":
+                    STATE["rovOrientation"] = data["orientation"]
+                elif data["action"] == "get":
+                    await websocket.send(json.dumps(STATE["rovOrientation"]))
+                
+                rebroadcastState()
             else:
+                await websocket.send(json.dumps({
+                    "error": "Unknown command",
+                }))
                 print("Unknown command: " + str(data["command"]))
     except Exception as e:
         print("Error: " + str(e))
@@ -100,6 +117,9 @@ async def debug_state():
         await asyncio.sleep(0.1)
 
 async def main():
-    async with websockets.serve(register, "localhost", 8765):
-        await printConnected()
+    print(f"Starting server at ws://{LISTEN_HOST}:{LISTEN_PORT}")
+    async with websockets.serve(register, LISTEN_HOST, LISTEN_PORT):
+        await debug_state()
         await asyncio.Future()  # run forever
+
+asyncio.run(main())
