@@ -14,6 +14,7 @@ STATE: dict = {
         "claw1": {
             "state": "",
             "angle": 0,
+            "limit": 0,
         }
     },
     "electrical": [
@@ -28,6 +29,16 @@ STATE: dict = {
         {
             "name": "Task 1",
             "checked": False,
+        }
+    ],
+    "thrusters": [
+        {
+            "thruster_FR": 0,
+            "thruster_FL": 0,
+            "thruster_BR": 0,
+            "thruster_BL": 0,
+            "thruster_MR": 0,
+            "thruster_ML": 0,
         }
     ]
 }
